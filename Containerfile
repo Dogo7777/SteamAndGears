@@ -38,15 +38,16 @@ dnf5 install -y @networkmanager-submodules @multimedia \
     bash-color-prompt tuned tuned-ppd flatpak podman \
     plymouth plymouth-system-theme plymouth-theme-spinner
 
-# 4. KERNEL CACHYOS (Baixa latência)
+# 4. KERNEL CACHYOS (Baixa latência - Corrigido para DNF5)
 # Instala o plugin necessário para habilitar repositórios COPR no dnf5
 dnf5 install -y 'dnf5-command(copr)'
 
 # Habilita o repositório do CachyOS
 dnf5 copr enable -y bieszczaders/kernel-cachyos
 
-# Sintaxe correta do DNF5 para trocar o kernel padrão pelo CachyOS
-dnf5 -y swap kernel kernel-cachyos --with kernel-cachyos-devel-matched
+# Sintaxe definitiva do DNF5 para swap de pacotes conflitantes
+dnf5 -y --allowerasing install kernel-cachyos kernel-cachyos-devel-matched
+
 # 5. OTIMIZAÇÕES DE SISTEMA E BLACKLIST
 mkdir -p /etc/sysctl.d /etc/modprobe.d
 
