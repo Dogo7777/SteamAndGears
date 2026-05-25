@@ -4,7 +4,8 @@ FROM quay.io/fedora/fedora-bootc:44
 RUN mkdir -p /var/roothome /data /var/home /etc/bootc
 
 # Configuração de atualização automática (aponta para o seu repo no GHCR)
-RUN echo 'image = "ghcr.io/SEU_USUARIO_GITHUB/sistema-gamer-dev:latest"' > /etc/bootc/config.toml
+# Nota: Nomes de repositórios OCI devem estar em letras minúsculas
+RUN echo 'image = "ghcr.io/dogo7777/steamandgears:latest"' > /etc/bootc/config.toml
 
 RUN <<EOF
 # Ajusta /opt e /usr/local para serem graváveis
@@ -20,6 +21,9 @@ dnf5 install -y --setopt=install_weak_deps=False \
     plasma-nm plasma-pa powerdevil \
     discover packagekit-qt6
 
+# Remove os apps padrão do KDE para garantir a soberania do Nautilus e Ptyxis
+dnf5 remove -y konsole dolphin || true
+
 # 2. PACOTES GAMER & DRIVERS
 dnf5 install -y --setopt=install_weak_deps=False \
     steam wine gamemode mangohud \
@@ -27,7 +31,7 @@ dnf5 install -y --setopt=install_weak_deps=False \
     steam-devices xorg-x11-server-Xwayland
 
 # 3. UTILITÁRIOS ESSENCIAIS
-dnf5 -y install @networkmanager-submodules @multimedia \
+dnf5 install -y @networkmanager-submodules @multimedia \
     compsize usbutils distrobox toolbox micro \
     wget tree git fastfetch zram-generator \
     langpacks-core-pt_BR langpacks-pt_BR langpacks-fonts-pt \
@@ -35,17 +39,27 @@ dnf5 -y install @networkmanager-submodules @multimedia \
     plymouth plymouth-system-theme plymouth-theme-spinner
 
 # 4. KERNEL CACHYOS (Baixa latência)
-dnf5 -y copr enable bieszczaders/kernel-cachyos
-dnf5 -y swap kernel kernel-cachyos kernel-cachyos-devel-matched
+# Instala o plugin necessário para habilitar repositórios COPR no dnf5
+dnf5 install -y 'dnf5-command(copr)'
 
-# 5. OTIMIZAÇÕES DE SISTEMA (Sysctl + Módulos)
-mkdir -p /etc/modules-load.d
-echo "intel_powerclamp" > /etc/modules-load.d/otimizacao-cpu.conf
+# Habilita o repositório do CachyOS
+dnf5 copr enable -y bieszczaders/kernel-cachyos
+
+# Sintaxe correta do DNF5 para trocar o kernel padrão pelo CachyOS
+dnf5 -y swap kernel kernel-cachyos --with kernel-cachyos-devel-matched
+# 5. OTIMIZAÇÕES DE SISTEMA E BLACKLIST
+mkdir -p /etc/sysctl.d /etc/modprobe.d
+
+# Sysctl para performance e gaming
 echo -e "vm.swappiness=10\nvm.max_map_count=2147483642\nnet.core.default_qdisc=fq_pie" > /etc/sysctl.d/99-gamer.conf
+
+# Bloqueio absoluto do intel_powerclamp
+echo "blacklist intel_powerclamp" > /etc/modprobe.d/blacklist-cpu.conf
+echo "install intel_powerclamp /bin/true" >> /etc/modprobe.d/blacklist-cpu.conf
 EOF
 
 # 6. CONFIGURAÇÃO DE PADRÕES E SERVIÇOS
-RUN <<ELF
+RUN <<EOF
 # Define Nautilus e Ptyxis como padrão
 mkdir -p /etc/xdg
 echo -e "[Default Applications]\ninode/directory=nautilus.desktop\nx-scheme-handler/terminal=org.gnome.Ptyxis.desktop" > /etc/xdg/mimeapps.list
@@ -54,11 +68,6 @@ echo -e "[Default Applications]\ninode/directory=nautilus.desktop\nx-scheme-hand
 mkdir -p /etc/skel/.config
 echo -e "[General]\nTerminalApplication=ptyxis" > /etc/skel/.config/kdeglobals
 
-# Garantir que o módulo problemático esteja na blacklist
-RUN mkdir -p /etc/modprobe.d && \
-    echo "blacklist intel_powerclamp" > /etc/modprobe.d/blacklist-cpu.conf && \
-    echo "install intel_powerclamp /bin/true" >> /etc/modprobe.d/blacklist-cpu.conf
-
 # Habilita serviços
 systemctl enable plasmalogin.service bootc-fetch.timer zram-swap.service
 systemctl mask systemd-remount-fs.service
@@ -66,4 +75,4 @@ systemctl mask systemd-remount-fs.service
 # Injeta parâmetros de kernel (kargs)
 mkdir -p /usr/lib/bootc/kargs.d
 echo 'kargs = ["intel_pstate=active", "mitigations=off", "nowatchdog"]' > /usr/lib/bootc/kargs.d/01-otimizacao.toml
-ELF
+EOF
