@@ -1,0 +1,8 @@
+output/
+*.iso
+*.raw
+*.img
+*.tar
+*.tar.gz
+tmp_podman/
+work/
