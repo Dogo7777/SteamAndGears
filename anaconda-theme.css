@@ -1,0 +1,13 @@
+@define-color product_bg_color #1A1A1A;
+@define-color product_fg_color #C9A84C;
+@define-color accent_color #C9A84C;
+@define-color accent_bg_color #C9A84C;
+@define-color accent_fg_color #1A1A1A;
+@define-color destructive_color #C9A84C;
+@define-color header_bg_color #1A1A1A;
+@define-color header_fg_color #C9A84C;
+@define-color sidebar_bg_color #111111;
+@define-color sidebar_fg_color #C9A84C;
+@define-color sidebar_highlight_color #C9A84C;
+@define-color button_bg_color #C9A84C;
+@define-color button_fg_color #1A1A1A;

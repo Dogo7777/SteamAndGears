@@ -6,11 +6,6 @@ RUN mkdir -p /var/roothome /data /var/home /etc/bootc
 # Configuração de atualização automática
 RUN echo 'image = "ghcr.io/dogo7777/steamandgears:latest"' > /etc/bootc/config.toml
 
-# Copia arquivos de configuração
-COPY logo.png /tmp/logo.png
-COPY anaconda-theme.css /tmp/anaconda-theme.css
-COPY plasma-org.kde.plasma.desktop-appletsrc /tmp/plasma-appletsrc
-
 RUN <<MAINEOF
 set -ex
 
@@ -59,8 +54,7 @@ dnf5 install -y \
     tuned tuned-ppd flatpak flatpak-selinux podman \
     plymouth plymouth-system-theme plymouth-theme-spinner \
     zram-generator \
-    zsh zsh-autosuggestions zsh-syntax-highlighting \
-    imagemagick
+    zsh zsh-autosuggestions zsh-syntax-highlighting
 
 # Configura zram
 printf '[zram0]\nzram-size = ram / 2\ncompression-algorithm = zstd\n' \
@@ -84,29 +78,9 @@ printf 'blacklist intel_powerclamp\ninstall intel_powerclamp /bin/true\n' \
 # 7. LOCALE
 printf 'LANG=pt_BR.UTF-8\n' > /etc/locale.conf
 printf 'KEYMAP=br-abnt2\n' > /etc/vconsole.conf
-
-# 8. LOGO - Plymouth, GDM, KDE
-mkdir -p /usr/share/plymouth/themes/spinner
-mkdir -p /usr/share/pixmaps
-mkdir -p /usr/share/anaconda/themes
-
-# Redimensiona para cada uso
-magick /tmp/logo.png -resize 256x256 /usr/share/plymouth/themes/spinner/watermark.png
-magick /tmp/logo.png -resize 200x200 /usr/share/pixmaps/system-logo-white.png
-magick /tmp/logo.png -resize 128x128 /usr/share/pixmaps/steamandgears.png
-magick /tmp/logo.png -resize 512x512 /usr/share/pixmaps/steamandgears-full.png
-
-# Tema do Anaconda
-cp /tmp/anaconda-theme.css /usr/share/anaconda/themes/steamandgears.css
-
-# Nome da distro
-sed -i 's|^PRETTY_NAME=.*|PRETTY_NAME="SteamAndGears"|' /etc/os-release
-sed -i 's|^NAME=.*|NAME="SteamAndGears"|' /etc/os-release
-
-rm /tmp/logo.png /tmp/anaconda-theme.css
 MAINEOF
 
-# 9. CONFIGURAÇÃO DE PADRÕES E SERVIÇOS
+# 8. CONFIGURAÇÃO DE PADRÕES E SERVIÇOS
 RUN <<CONFIGEOF
 set -ex
 
@@ -115,15 +89,10 @@ mkdir -p /etc/xdg
 printf '[Default Applications]\ninode/directory=nautilus.desktop\nx-scheme-handler/terminal=org.gnome.Ptyxis.desktop\n' \
     > /etc/xdg/mimeapps.list
 
-# KDE skel - terminal, taskbar e decoração de janela
+# Define Ptyxis como terminal padrão no KDE
 mkdir -p /etc/skel/.config
-
-# Terminal padrão + decoração AurowaitaDark
-printf '[General]\nTerminalApplication=ptyxis\n\n[org.kde.kdecoration2]\nlibrary=org.kde.kwin.aurorae\ntheme=__aurorae__svg__AurowaitaDark\n' \
+printf '[General]\nTerminalApplication=ptyxis\n' \
     > /etc/skel/.config/kdeglobals
-
-# Taskbar com Nautilus, Ptyxis e GNOME Software fixados
-cp /tmp/plasma-appletsrc /etc/skel/.config/plasma-org.kde.plasma.desktop-appletsrc
 
 # Kargs do bootc
 mkdir -p /usr/lib/bootc/kargs.d
@@ -140,6 +109,4 @@ systemctl enable gdm.service
 systemctl enable NetworkManager.service
 systemctl enable tuned.service
 systemctl enable fstrim.timer
-
-rm /tmp/plasma-appletsrc
 CONFIGEOF

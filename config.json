@@ -1,0 +1,9 @@
+{
+  "customizations": {
+    "installer": {
+      "kickstart": {
+        "contents": "lang pt_BR.UTF-8\nkeyboard br-abnt2\ntimezone America/Sao_Paulo\nbootloader --location=mbr\nclearpart --all --initlabel\npart /boot/efi --fstype=efi --size=512\npart /boot --fstype=ext4 --size=1024\npart btrfs.01 --fstype=btrfs --grow\nbtrfs none --label=system btrfs.01\nbtrfs / --subvol --name=@ LABEL=system\nbtrfs /var --subvol --name=@var LABEL=system\nbtrfs /var/home --subvol --name=@var-home LABEL=system\nbtrfs /var/log --subvol --name=@var-log LABEL=system\nbtrfs /var/cache --subvol --name=@var-cache LABEL=system\nbtrfs /var/lib/docker --subvol --name=@docker LABEL=system\nreboot\n"
+      }
+    }
+  }
+}
